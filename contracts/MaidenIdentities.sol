@@ -59,6 +59,9 @@ contract MaidenIdentities is Relay {
 
   function addIdentity(bytes32 identity) public {
 
+    // do not add empty identities
+    if (identity == 0x0) revert();
+
     // only add new identities
     if (identitiesList[identity]) revert();
 
@@ -86,11 +89,15 @@ contract MaidenIdentities is Relay {
     // only the relay can call this method
     if (msg.sender != getClaimAddress(identity)) revert();
 
-    // // only can claim an identity once
-    // // if (identities[warrior])
+    // pay warrior if first time
+    if (warriorIdentities[warrior].identity == 0x0 && this.balance >= payout && payout > 0) {
+      if(!warrior.call.value(payout)()) revert();
+    }
 
     warriorIdentities[warrior] = Warrior(identity);
-    warriors.push(warrior);
+
+    // some memory thing is being overwritten here that makes the .call fail
+    // warriors.push(warrior);
 
     IdentityClaimed(warrior, identity);
   }
