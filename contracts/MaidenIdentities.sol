@@ -1,6 +1,47 @@
 pragma solidity ^0.4.15;
 
-import "./Relay.sol";
+// modified relay contract
+// https://github.com/Shapeshift-Public/relay
+
+/* The Relay contract serves as a base contract for any contract that wishes to expose methods through relay addresses. */
+contract Relay {
+
+  mapping(bytes32 => address) public relays;
+
+  /** Adds a relay for the given method. */
+  function addRelay(bytes32 identity) internal returns (address) {
+    address proxy = address(new Proxy(MaidenIdentities(this), identity));
+    relays[identity] = proxy;
+    return proxy;
+  }
+
+  /** Retrieves the dynamic contract address that can be sent a transaction to trigger the given method. */
+  function getRelay(bytes32 identity) constant internal returns (address) {
+    return relays[identity];
+  }
+}
+
+/** The Proxy contract represents a single method on a host contract. It stores the address of the host contract and the method id of the method so that it can invoke the method when a user sends funds to this contract's address. Note: This version is permission-less. Most use cases would require an authorized owner contract. */
+contract Proxy {
+
+  /* The address of the host contract. */
+  MaidenIdentities warriorsContract;
+
+  /* The identity to be claimed. */
+  bytes32 identity;
+
+  function Proxy(MaidenIdentities _identitiesContract, bytes32 _identity) {
+    warriorsContract = _identitiesContract;
+    identity = _identity;
+  }
+
+  function() payable {
+
+    // if warriorsContract call reverts, revert this transaction as well
+    // warriorsContract.claimIdentity.value(msg.value)(msg.sender, identity);
+    warriorsContract.claimIdentity(msg.sender, identity);
+  }
+}
 
 contract MaidenIdentities is Relay {
 
@@ -13,122 +54,25 @@ contract MaidenIdentities is Relay {
     bytes32 identity;
   }
 
-  // mapping of warriors with identities
+  // mapping of MaidenIdentities with identities
   mapping (address => Warrior) public warriorIdentities;
-  address[] warriors;
-
-  // mapping of all unique identities
-  mapping (bytes32 => bool) public identitiesList;
-  bytes32[] identitiesListArray;
-
-  address public owner;
-  bool public enabled;
-  uint public payout;
-
-  /****************************************************
-   * MODIFIERS
-   ****************************************************/
-
-  modifier onlyOwner() {
-    if (msg.sender != owner) revert();
-    _;
-  }
-
-  /****************************************************
-   * EVENTS
-   ****************************************************/
-
-  event Transferred(address _owner);
-  event IdentityAdded(bytes32 _identity);
-  event IdentityClaimed(address _warrior, bytes32 _identity);
-  event Enabled();
-  event Disabled();
-  event PayoutSet(uint _payout);
-  event Withdrawn(uint _amount);
-
-  /****************************************************
-   * PUBLIC FUNCTIONS
-   ****************************************************/
-
-  function MaidenIdentities() {
-    owner = msg.sender;
-  }
+  address[] public warriors;
 
   function() payable {
   }
 
   function addIdentity(bytes32 identity) public {
-
-    // do not add empty identities
-    if (identity == 0x0) revert();
-
-    // only add new identities
-    if (identitiesList[identity]) revert();
-
-    // add the identity
-    identitiesList[identity] = true;
-    identitiesListArray.push(identity);
-
-    // create the relay to let anyone claim the identity
-    Relay.addRelay(identity);
-
-    IdentityAdded(identity);
+    addRelay(identity);
   }
-
-  // function getWarriorIdentities(bytes32 identity) {
-  // }
-
-  // direct claim
-  // function claimIdentity(bytes32 identity) public payable {
-  //   claimIdentity(msg.sender, identity);
-  // }
 
   // relay claim
   function claimIdentity(address warrior, bytes32 identity) public payable {
-
-    // only the relay can call this method
-    if (msg.sender != getClaimAddress(identity)) revert();
-
-    // pay warrior if first time
-    if (warriorIdentities[warrior].identity == 0x0 && this.balance >= payout && payout > 0) {
-      if(!warrior.call.value(payout)()) revert();
-    }
-
+    if(!warrior.call.value(0.1 ether)()) revert();
     warriorIdentities[warrior] = Warrior(identity);
-
-    // some memory thing is being overwritten here that makes the .call fail
-    // warriors.push(warrior);
-
-    IdentityClaimed(warrior, identity);
+    warriors.push(warrior);
   }
 
   /* owner only */
-
-  function transferOwner(address newOwner) public onlyOwner {
-    owner = newOwner;
-    Transferred(owner);
-  }
-
-  function enable() public onlyOwner {
-    enabled = true;
-    Enabled();
-  }
-
-  function disable() public onlyOwner {
-    enabled = false;
-    Disabled();
-  }
-
-  // sets the ETH payout for claiming an identity
-  function setPayout(uint _payout) public onlyOwner {
-    payout = _payout;
-    PayoutSet(payout);
-  }
-
-  function withdraw(address to) public onlyOwner {
-    Withdrawn(this.balance);
-    if(!to.call.value(this.balance)()) revert();
-  }
 
   /****************************************************
    * READ-ONLY FUNCTIONS
@@ -137,14 +81,6 @@ contract MaidenIdentities is Relay {
   // get the relay address for claiming the given identity
   function getClaimAddress(bytes32 identity) public constant returns(address) {
     return Relay.getRelay(identity);
-  }
-
-  function getIdentity(uint i) public constant returns(bytes32) {
-    return identitiesListArray[i];
-  }
-
-  function numIdentities() public constant returns(uint) {
-    return identitiesListArray.length;
   }
 
   function getWarrior(uint i) public constant returns(address) {
