@@ -84,7 +84,7 @@ contract MaidenIdentities is Relay {
   function claimIdentity(address warrior, bytes32 identity) public payable {
 
     // only the relay can call this method
-    // if (msg.sender != getClaimAddress(identity)) revert();
+    if (msg.sender != getClaimAddress(identity)) revert();
 
     // // only can claim an identity once
     // // if (identities[warrior])

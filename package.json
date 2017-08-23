@@ -8,6 +8,12 @@
     "url": "https://github.com/raineorshine"
   },
   "license": "ISC",
+  "engines": {
+    "node": ">=8.0.0"
+  },
+  "scripts": {
+    "test": "truffle test"
+  },
   "dependencies": {
     "truffle": "^3.4.9"
   }
