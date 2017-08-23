@@ -59,6 +59,9 @@ contract MaidenIdentities is Relay {
 
   function addIdentity(bytes32 identity) public {
 
+    // do not add empty identities
+    if (identity == 0x0) revert();
+
     // only add new identities
     if (identitiesList[identity]) revert();
 
@@ -72,10 +75,8 @@ contract MaidenIdentities is Relay {
     IdentityAdded(identity);
   }
 
-  // function getWarriorIdentities(bytes32 identity) {
-  // }
-
   // direct claim
+  // truffle can't handle overloaded functions
   // function claimIdentity(bytes32 identity) public payable {
   //   claimIdentity(msg.sender, identity);
   // }
@@ -86,8 +87,10 @@ contract MaidenIdentities is Relay {
     // only the relay can call this method
     if (msg.sender != getClaimAddress(identity)) revert();
 
-    // // only can claim an identity once
-    // // if (identities[warrior])
+    // pay warrior if first time
+    if (warriorIdentities[warrior].identity == 0x0 && this.balance >= payout && payout > 0) {
+      if(!warrior.call.value(payout)()) revert();
+    }
 
     warriorIdentities[warrior] = Warrior(identity);
     warriors.push(warrior);
@@ -152,5 +155,3 @@ contract MaidenIdentities is Relay {
     return warriors.length;
   }
 }
-
-

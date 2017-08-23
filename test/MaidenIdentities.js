@@ -77,6 +77,37 @@ contract('MaidenIdentities', accounts => {
 
 contract('MaidenIdentities', accounts => {
   const [owner, user] = accounts
+  it('should set a payout for claiming an identity', async () => {
+    const contract = await MaidenIdentities.deployed()
+    await contract.addIdentity('queer', { from: user })
+
+    // fund the contract and set the payout
+    await web3.eth.sendTransaction({ from: owner, to: contract.address, value: web3.toWei(1) })
+    await contract.setPayout(web3.toWei(0.1), { from: owner })
+
+    // claim an identity
+    const claimAddress = await contract.getClaimAddress('queer')
+    await web3.eth.sendTransaction({ from: user, to: claimAddress, gas: 4000000 })
+
+    const balance = web3.eth.getBalance(contract.address)
+    assert.equal(web3.fromWei(balance).toNumber(), 0.9)
+  })
+})
+
+contract('MaidenIdentities', accounts => {
+  const [owner, user] = accounts
+  it('should allow owner to disable')
+  // it('should not allow the contract to be paused by a non-owner')
+})
+
+contract('MaidenIdentities', accounts => {
+  const [owner, user] = accounts
+  it('should not payout a user more than once')
+  // it('should not allow the contract to be paused by a non-owner')
+})
+
+contract('MaidenIdentities', accounts => {
+  const [owner, user] = accounts
   it('should allow the contract to be paused by the owner')
   // it('should not allow the contract to be paused by a non-owner')
 })
