@@ -55,6 +55,28 @@ contract('MaidenIdentities', accounts => {
 
 contract('MaidenIdentities', accounts => {
   const [owner, user] = accounts
+  it('should allow donations to be sent to the main contract', async () => {
+    const contract = await MaidenIdentities.deployed()
+    await web3.eth.sendTransaction({ from: user, to: contract.address, value: web3.toWei(1) })
+  })
+  // it('should not allow the contract to be paused by a non-owner')
+})
+
+contract('MaidenIdentities', accounts => {
+  const [owner, user] = accounts
+  it('should allow donations to be collected by the owner', async () => {
+    const contract = await MaidenIdentities.deployed()
+    await web3.eth.sendTransaction({ from: user, to: contract.address, value: web3.toWei(1) })
+    await contract.withdraw(owner, { from: owner })
+
+    const balance = web3.eth.getBalance(contract.address)
+    assert.equal(balance.toNumber(), 0)
+  })
+  // it('should not allow the contract to be paused by a non-owner')
+})
+
+contract('MaidenIdentities', accounts => {
+  const [owner, user] = accounts
   it('should allow the contract to be paused by the owner')
   // it('should not allow the contract to be paused by a non-owner')
 })
