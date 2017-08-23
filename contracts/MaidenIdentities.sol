@@ -30,7 +30,7 @@ contract MaidenIdentities is Relay {
    ****************************************************/
 
   modifier onlyOwner() {
-    if (msg.sender == owner) revert();
+    if (msg.sender != owner) revert();
     _;
   }
 
