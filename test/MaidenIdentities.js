@@ -77,20 +77,24 @@ contract('MaidenIdentities', accounts => {
 
 contract('MaidenIdentities', accounts => {
   const [owner, user] = accounts
-  it('should set a payout for claiming an identity', async () => {
+  it.only('should set a payout for claiming an identity', async () => {
     const contract = await MaidenIdentities.deployed()
-    await contract.addIdentity('queer', { from: user })
 
-    // fund the contract and set the payout
+    // fund the contract
     await web3.eth.sendTransaction({ from: owner, to: contract.address, value: web3.toWei(1) })
-    await contract.setPayout(web3.toWei(0.1), { from: owner })
+    await contract.addIdentity('queer', { from: user })
 
     // claim an identity
     const claimAddress = await contract.getClaimAddress('queer')
+    // console.log('user', user)
+    // console.log('contract', contract.address)
+    // console.log('claimAddress', claimAddress)
     await web3.eth.sendTransaction({ from: user, to: claimAddress })
 
     const balance = web3.eth.getBalance(contract.address)
     assert.equal(web3.fromWei(balance).toNumber(), 0.9)
+    assert.equal((await contract.numWarriors()).toNumber(), 1)
+    assert.equal((await contract.getWarrior(0)).toString(), user)
   })
 })
 
