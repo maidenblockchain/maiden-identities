@@ -26,8 +26,20 @@ const assertThrowFunc = f => {
 
 contract('MaidenIdentities', accounts => {
   const [owner, user] = accounts
-  it('should deploy a MaidenIdentities contract', () => {
-    return MaidenIdentities.deployed()
+  it('should deploy a MaidenIdentities contract', async () => {
+    // const contract = await MaidenIdentities.deployed(web3.toWei(0.1))
+    const contract = await MaidenIdentities.new(web3.toWei(0.1), [], { from: owner })
+    assert.equal((await contract.payout()).toString(), web3.toWei(0.1).toString())
+  })
+})
+
+contract('MaidenIdentities', accounts => {
+  const [owner, user] = accounts
+  it('should be able to fund the contract at creation', async () => {
+    // const contract = await MaidenIdentities.deployed(web3.toWei(0.1))
+    const contract = await MaidenIdentities.new(web3.toWei(0.1), [], { from: owner, value: web3.toWei(1) })
+    const balance = web3.eth.getBalance(contract.address)
+    assert.equal(balance.toNumber(), web3.toWei(1))
   })
 })
 
@@ -36,6 +48,17 @@ contract('MaidenIdentities', accounts => {
   it('should allow an identity to be added', async () => {
     const contract = await MaidenIdentities.deployed()
     await contract.addIdentity('queer', { from: user })
+    assert.equal((await contract.numIdentities()).toNumber(), 1)
+    assert.equal(web3.toUtf8(await contract.getIdentity(0)).toString(), 'queer')
+    assert.notEqual(+(await contract.getClaimAddress('queer')).toString(), 0)
+    assert(web3.isAddress(await contract.getClaimAddress('queer')).toString())
+  })
+})
+
+contract('MaidenIdentities', accounts => {
+  const [owner, user] = accounts
+  it('should allow identities to be added in the constructor', async () => {
+    const contract = await MaidenIdentities.new(web3.toWei(0.1), ['queer'], { from: owner })
     assert.equal((await contract.numIdentities()).toNumber(), 1)
     assert.equal(web3.toUtf8(await contract.getIdentity(0)).toString(), 'queer')
     assert.notEqual(+(await contract.getClaimAddress('queer')).toString(), 0)

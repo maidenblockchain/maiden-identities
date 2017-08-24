@@ -49,8 +49,13 @@ contract MaidenIdentities is Relay {
    * PUBLIC FUNCTIONS
    ****************************************************/
 
-  function MaidenIdentities() {
+  function MaidenIdentities(uint _payout, bytes32[] _identities) payable {
     owner = msg.sender;
+    payout = _payout;
+
+    for(uint32 i=0; i<_identities.length; i++) {
+      addIdentity(_identities[i]);
+    }
   }
 
   function() payable {
