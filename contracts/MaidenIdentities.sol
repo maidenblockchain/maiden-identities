@@ -86,23 +86,21 @@ contract MaidenIdentities is Relay {
     // only the relay can call this method
     if (msg.sender != getClaimAddress(identity)) revert();
 
+    // a given identity can only be claimed once
+    for(uint32 i=0; i<warriorIdentities[warrior].identities.length; i++) {
+      if (warriorIdentities[warrior].identities[i] == identity) revert();
+    }
+
     // pay warrior if first time
     if (warriorIdentities[warrior].identities.length == 0 && this.balance >= payout && payout > 0) {
       if(!warrior.call.value(payout)()) revert();
     }
 
-    // struct Warrior {
-    //   bytes32[50] identities;
-    // }
-
-    // // mapping of warriors with identities
-    // mapping (address => Warrior) warriorIdentities;
-
     // warriorIdentities[warrior] = Warrior(new bytes32[](50));
     warriorIdentities[warrior].identities.push(identity);
     warriors.push(warrior);
 
-    // IdentityClaimed(warrior, identity);
+    IdentityClaimed(warrior, identity);
   }
 
   /* owner only */
