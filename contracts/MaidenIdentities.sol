@@ -9,16 +9,15 @@ contract MaidenIdentities is Relay {
    ****************************************************/
 
   struct Warrior {
-    // bytes32[] identities;
-    bytes32 identity;
+    bytes32[] identities;
   }
 
   // mapping of warriors with identities
-  mapping (address => Warrior) public warriorIdentities;
+  mapping (address => Warrior) warriorIdentities;
   address[] warriors;
 
   // mapping of all unique identities
-  mapping (bytes32 => bool) public identitiesList;
+  mapping (bytes32 => bool) identitiesList;
   bytes32[] identitiesListArray;
 
   address public owner;
@@ -88,14 +87,22 @@ contract MaidenIdentities is Relay {
     if (msg.sender != getClaimAddress(identity)) revert();
 
     // pay warrior if first time
-    if (warriorIdentities[warrior].identity == 0x0 && this.balance >= payout && payout > 0) {
+    if (warriorIdentities[warrior].identities.length == 0 && this.balance >= payout && payout > 0) {
       if(!warrior.call.value(payout)()) revert();
     }
 
-    warriorIdentities[warrior] = Warrior(identity);
+    // struct Warrior {
+    //   bytes32[50] identities;
+    // }
+
+    // // mapping of warriors with identities
+    // mapping (address => Warrior) warriorIdentities;
+
+    // warriorIdentities[warrior] = Warrior(new bytes32[](50));
+    warriorIdentities[warrior].identities.push(identity);
     warriors.push(warrior);
 
-    IdentityClaimed(warrior, identity);
+    // IdentityClaimed(warrior, identity);
   }
 
   /* owner only */
@@ -143,12 +150,28 @@ contract MaidenIdentities is Relay {
     return identitiesListArray.length;
   }
 
+  function getIdentities() public constant returns(bytes32[]) {
+    return identitiesListArray;
+  }
+
+  function getWarriors() public constant returns(address[]) {
+    return warriors;
+  }
+
   function getWarrior(uint i) public constant returns(address) {
     return warriors[i];
   }
 
-  function getWarriorIdentities(address warrior) public constant returns(bytes32) {
-    return warriorIdentities[warrior].identity;
+  function getWarriorIdentities(address warrior) public constant returns(bytes32[]) {
+    return warriorIdentities[warrior].identities;
+  }
+
+  function getWarriorNumIdentities(address warrior) public constant returns(uint) {
+    return warriorIdentities[warrior].identities.length;
+  }
+
+  function getWarriorIdentity(address warrior, uint i) public constant returns(bytes32) {
+    return warriorIdentities[warrior].identities[i];
   }
 
   function numWarriors() public constant returns(uint) {

@@ -44,12 +44,11 @@ contract('MaidenIdentities', accounts => {
     const contract = await MaidenIdentities.deployed()
     await contract.addIdentity('queer', { from: user })
     const claimAddress = await contract.getClaimAddress('queer')
-    await web3.eth.sendTransaction({ from: user, to: claimAddress })
+    await web3.eth.sendTransaction({ from: user, to: claimAddress, gas: 4000000 })
 
     assert.equal((await contract.numWarriors()).toNumber(), 1)
     assert.equal((await contract.getWarrior(0)).toString(), user)
-    assert.equal(web3.toUtf8(await contract.getWarriorIdentities(user)).toString(), 'queer')
-    assert(web3.isAddress(await contract.getClaimAddress('queer')).toString())
+    assert.deepEqual((await contract.getWarriorIdentities(user)).map(web3.toUtf8), ['queer'])
   })
 })
 
@@ -91,6 +90,10 @@ contract('MaidenIdentities', accounts => {
 
     const balance = web3.eth.getBalance(contract.address)
     assert.equal(web3.fromWei(balance).toNumber(), 0.9)
+
+    assert.equal((await contract.numWarriors()).toNumber(), 1)
+    assert.equal((await contract.getWarrior(0)).toString(), user)
+    assert.equal((await contract.getWarriorIdentities(user)).map(web3.toUtf8), 'queer')
   })
 })
 
