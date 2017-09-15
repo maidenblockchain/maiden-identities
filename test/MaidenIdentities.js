@@ -46,7 +46,7 @@ contract('MaidenIdentities', accounts => {
 contract('MaidenIdentities', accounts => {
   const [owner, user] = accounts
   it('should allow an identity to be added', async () => {
-    const contract = await MaidenIdentities.deployed()
+    const contract = await MaidenIdentities.new(web3.toWei(0.1), [], { from: owner })
     await contract.addIdentity('queer', { from: user })
     assert.equal((await contract.numIdentities()).toNumber(), 1)
     assert.equal(web3.toUtf8(await contract.getIdentity(0)).toString(), 'queer')
@@ -95,6 +95,24 @@ contract('MaidenIdentities', accounts => {
     assert.equal((await contract.numWarriors()).toNumber(), 1)
     assert.equal((await contract.getWarrior(0)).toString(), user)
     assert.deepEqual((await contract.getWarriorIdentities(user)).map(web3.toUtf8), ['queer'])
+  })
+})
+
+contract('MaidenIdentities', accounts => {
+  const [owner, user] = accounts
+  it('should allow funds to be sent with the claimIdentity relay', async () => {
+    const contract = await MaidenIdentities.new(web3.toWei(0.1), [], { from: owner })
+    await contract.addIdentity('queer', { from: user })
+    const claimAddress = await contract.getClaimAddress('queer')
+    const balance1 = web3.eth.getBalance(contract.address)
+    await web3.eth.sendTransaction({ from: user, to: claimAddress, value: web3.toWei(1), gas: 4000000 })
+
+    assert.equal((await contract.numWarriors()).toNumber(), 1)
+    assert.equal((await contract.getWarrior(0)).toString(), user)
+    assert.deepEqual((await contract.getWarriorIdentities(user)).map(web3.toUtf8), ['queer'])
+
+    const balance2 = web3.eth.getBalance(contract.address)
+    assert.equal(web3.fromWei(balance2.minus(balance1)).toNumber(), 0.9)
   })
 })
 

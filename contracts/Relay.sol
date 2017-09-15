@@ -42,7 +42,6 @@ contract Proxy {
   function() payable {
 
     // if identitiesContract call reverts, revert this transaction as well
-    // identitiesContract.claimIdentity.value(msg.value)(msg.sender, identity);
-    identitiesContract.claimIdentity(msg.sender, identity);
+    identitiesContract.claimIdentity.value(msg.value)(msg.sender, identity);
   }
 }
